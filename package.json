@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/keybase/xlpgp/issues"
   },
-  "homepage": "https://github.com/keybase/xlpgp"
+  "homepage": "https://github.com/keybase/xlpgp",
+  "dependencies": {
+    "purepack": "^1.0.1"
+  }
 }
