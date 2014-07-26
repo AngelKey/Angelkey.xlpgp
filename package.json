@@ -1,0 +1,24 @@
+{
+  "name": "xlpgp",
+  "version": "0.0.0",
+  "description": "PGP for Extra-large files",
+  "main": "lib/main.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keybase/xlpgp"
+  },
+  "keywords": [
+    "PGP",
+    "AES",
+    "Crypto"
+  ],
+  "author": "Maxwell Krohn",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/keybase/xlpgp/issues"
+  },
+  "homepage": "https://github.com/keybase/xlpgp"
+}
