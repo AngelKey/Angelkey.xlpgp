@@ -91,6 +91,7 @@ class Encryptor
 
   _generate_hash_index : (cb) ->
     await @_hash_index.generate {stubs }, defer err, @_hash_index_packets
+    cb err
 
   #------------------------
 
@@ -102,6 +103,7 @@ class Encryptor
       end = Math.min(i + @_blocksize, len)
       await @stubs.read { start, bytes : (end - start) }, esc defer buf
       packet = new EncryptedPacket { buf, @stubs }
+      await packet.encrypt esc defer()
       await @_packet_writer.write { packet, compute_hash : true }, esc defer index
       @_hash_index.index { index, hmac : packet.hmac }
     cb null
