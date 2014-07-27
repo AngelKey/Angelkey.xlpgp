@@ -6,3 +6,5 @@ module.exports =
     iv_size  : 16 # AES256
   hmac :
     key_size : 32 # SHA256
+  defaults :
+    blocksize : 0x100000
