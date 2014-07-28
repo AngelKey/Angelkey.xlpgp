@@ -12,12 +12,14 @@ C = require './const'
 
 class Encryptor 
 
-  constructor : ({@stubs, asp, blocksize}) ->
+  constructor : ({@stubs, asp, config}) ->
     @_hash_index = new HashIndex { @stubs }
     @_data = { cipeher : {}, hmac : {} }
     @_packet_writer = new PacketWriter { @stubs }
     @asp = ASP.make asp
-    @blocksize = blocksize or C.defaults.blocksize
+    @config = config or {}
+    @config.blocksize or= C.defaults.blocksize
+    @config.hashes_per_block or= C.defaults.hashes_per_block
 
   #------------------------
 
@@ -83,8 +85,8 @@ class Encryptor
   #------------------------
 
   _write_dummy_hash_blocks : (cb) ->
-    tmp = new HashIndex { @stubs }
-    await tmp.gen_dummy { @blocksize }, esc defer() 
+    tmp = new HashIndex { @stubs, @config }
+    await tmp.gen_dummy { }, esc defer() 
     await @_packet_writer.write { packets }, defer err
     cb err
 
@@ -101,7 +103,7 @@ class Encryptor
     await @stubs.get_length esc defer len
     i = 0
     while i < len
-      end = Math.min(i + @_blocksize, len)
+      end = Math.min(i + @config.blocksize, len)
       await @stubs.read { start, bytes : (end - start) }, esc defer buf
       packet = new EncryptedPacket { buf, @stubs }
       await packet.encrypt esc defer()
