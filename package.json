@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/keybase/xlpgp",
   "dependencies": {
+    "iced-coffee-script": "^1.7.1-f",
     "purepack": "^1.0.1"
   }
 }

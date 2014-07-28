@@ -3,7 +3,7 @@
 #
 # Abstract stubs for how to use this library
 #
-class Stubs
+exports.Stubs = class Stubs
 
   constructor : () ->
   _unimplemented : (cb) -> cb new Error "unimplemented!"
@@ -22,6 +22,4 @@ class Stubs
   get_length : (cb) ->                            @_unimplemented cb
   set_length : (cb) ->                            @_unimplemented cb
   prng : ({n}, cb) ->                             @_unimplemented cb
-
-
-
+  flush : (cb) ->                                 @_unimplemented cb

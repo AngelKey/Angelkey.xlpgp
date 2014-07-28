@@ -91,3 +91,22 @@ exports.DataPacket = class DataPacket extends Packet
 
 #===============================================================
 
+exports.HeaderPacket = class HeaderPacket extends Packet
+
+  TAG : 0x1
+
+  #---------
+
+  constructor : ( { @pgp, @stubs}) ->
+    super { stubs }
+
+  #---------
+
+  packet_tag : () -> HeaderPacket.TAG
+
+  #---------
+
+  to_json : () -> @pgp
+
+#===============================================================
+

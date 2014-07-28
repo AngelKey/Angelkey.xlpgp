@@ -34,7 +34,7 @@ exports.Header = class Header
     else
       await @generate esc defer pgp
       to_buf_args.len = @_dummy.len if @_dummy?
-    pkt = new HeaderPacket { len, pgp }
+    pkt = new HeaderPacket { pgp, @stubs }
     buf = pkt.to_buffer to_buf_args
     cb null, buf
 

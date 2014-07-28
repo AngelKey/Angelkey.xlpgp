@@ -38,21 +38,21 @@ exports.Index = class Index
   gen_dummy : (args, cb) ->
     esc = make_esc cb, "HashIndex::gen_dummy"
     await @layout esc defer()
-    packets = []
-    i = 2
-    while i < @_counts.total_bocks
-      n = Math.min(@_config.hashes_per_block, @_counts.total_blocks - i)
-      index = [ i, @gen_dummy_block(n) ]
-      i += n
-      pkt = new IndexPacket { index }
-      packets.push pkt
-    cb null
+
+    n = @_counts.file_blocks
+    t = @_counts.total_blocks
+
+    for i in [(n-t)...n]
+      @_hmacs[i] = @_empty_hash
+
+    await @generate { skip_sanity_check : true, clear : true }, esc defer packets
+    cb null, packets
 
   #--------------
 
   generate : (args, cb) ->
     esc = make_esc cb, "HashIndex::generate"
-    await @sanity_check esc defer()
+    await @sanity_check esc defer() unless args.skip_sanity_check
     prev = null
     hpib = @config.hashes_per_block - 1
     begin = @_counts.total_blocks * hpib
@@ -71,8 +71,11 @@ exports.Index = class Index
       prev = pkt
       i--
     packets.reverse()
-    for p,i in packets
-      @_hmacs[i+1] = p
+    if args.clear
+      @_hmacs = []
+    else
+      for p,i in packets
+        @_hmacs[i+1] = p
     cb null, packets
 
   #------------

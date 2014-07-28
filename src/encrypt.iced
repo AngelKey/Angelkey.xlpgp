@@ -10,7 +10,7 @@ C = require './const'
 
 #===============================================================
 
-class Encryptor
+exports.Encryptor = class Encryptor
 
   constructor : ({@stubs, asp, config}) ->
     @_index = new Index { @stubs }
@@ -34,6 +34,7 @@ class Encryptor
     @_packet_writer.rewind()
     await @_write_header { dummy : false }, esc defer()
     await @_write_index esc defer()
+    await @stubs.flush esc defer()
     cb null
 
   #------------------------
@@ -74,7 +75,7 @@ class Encryptor
 
   _write_dummy_index : (cb) ->
     tmp = new Index { @stubs, @config }
-    await tmp.gen_dummy { }, esc defer packets
+    await tmp.gen_dummy {}, esc defer packets
     await @_packet_writer.write { packets }, defer err
     cb err
 
@@ -99,6 +100,13 @@ class Encryptor
       await @_packet_writer.write { packet}, esc defer index
       @_index.index { index, hmac : packet.hmac }
     cb null
+
+#===============================================================
+
+exports.encrypt = ({stubs, asp, config}, cb) ->
+  e = new Encryptor { stubs, asp, config }
+  await e.run defer err
+  cb err
 
 #===============================================================
 
