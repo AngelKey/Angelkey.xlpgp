@@ -18,7 +18,7 @@ class Stubs
   hmac_sha256 : ( {buf}, cb) ->                   @_unimplemented cb
   sha256 : ({buf}, cb) ->                         @_unimplemented cb
   read : ({start, bytes}, cb) ->                  @_unimplemented cb
-  write : ({buf, start, bytes}, cb) ->            @_unimplemented cb
+  write : ({buf, start}, cb) ->                   @_unimplemented cb
   get_length : (cb) ->                            @_unimplemented cb
   set_length : (cb) ->                            @_unimplemented cb
   prng : ({n}, cb) ->                             @_unimplemented cb

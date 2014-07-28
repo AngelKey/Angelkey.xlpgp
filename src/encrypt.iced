@@ -5,6 +5,7 @@ purepack = require 'msgpack'
 {Header} = require './header'
 C = require './const'
 {Packet,PacketWriter} = require './packet'
+{PacketWriter} = require './io'
 {ASP} = require('pgp-utils').util
 
 #===============================================================
@@ -12,11 +13,11 @@ C = require './const'
 class Encryptor 
 
   constructor : ({@stubs, asp, blocksize}) ->
-    @_hash_index = new HashIndex
+    @_hash_index = new HashIndex { @stubs }
     @_data = { cipeher : {}, hmac : {} }
     @_packet_writer = new PacketWriter { @stubs }
     @asp = ASP.make asp
-    @_blocksize = blocksize or C.defaults.blocksize
+    @blocksize = blocksize or C.defaults.blocksize
 
   #------------------------
 
@@ -36,7 +37,6 @@ class Encryptor
 
   init : (cb) ->
     await @stubs.init { @asp }, defer err
-    @_hash_index = new HashIndex {}
     cb err
 
   #------------------------
@@ -83,14 +83,15 @@ class Encryptor
   #------------------------
 
   _write_dummy_hash_blocks : (cb) ->
-    packets = HashIndex.new_dummy({ @stubs }).to_packet()
+    tmp = new HashIndex { @stubs }
+    await tmp.gen_dummy { @blocksize }, esc defer() 
     await @_packet_writer.write { packets }, defer err
     cb err
 
   #------------------------
 
   _generate_hash_index : (cb) ->
-    await @_hash_index.generate {stubs }, defer err, @_hash_index_packets
+    await @_hash_index.generate {}, defer err, @_hash_index_packets
     cb err
 
   #------------------------
@@ -104,7 +105,7 @@ class Encryptor
       await @stubs.read { start, bytes : (end - start) }, esc defer buf
       packet = new EncryptedPacket { buf, @stubs }
       await packet.encrypt esc defer()
-      await @_packet_writer.write { packet, compute_hash : true }, esc defer index
+      await @_packet_writer.write { packet}, esc defer index
       @_hash_index.index { index, hmac : packet.hmac }
     cb null
 
