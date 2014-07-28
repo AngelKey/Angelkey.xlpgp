@@ -27,6 +27,7 @@
     "purepack": "^1.0.1"
   },
   "devDependencies": {
-    "kbpgp": "^0.1.23"
+    "kbpgp": "^0.1.23",
+    "triplesec": "^3.0.17"
   }
 }

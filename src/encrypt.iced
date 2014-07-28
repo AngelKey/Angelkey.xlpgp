@@ -5,17 +5,15 @@
 C = require './const'
 {DataPacket} = require './packet'
 {PacketWriter} = require './io'
-{ASP} = require('pgp-utils').util
 
 #===============================================================
 
 exports.Encryptor = class Encryptor
 
-  constructor : ({@stubs, asp, config}) ->
+  constructor : ({@stubs, config}) ->
     @_index = new Index { @stubs }
     @_data = { cipeher : {}, hmac : {} }
     @_packet_writer = new PacketWriter { @stubs }
-    @asp = ASP.make asp
     @config = config or {}
     @config.blocksize or= C.defaults.blocksize
     @config.hashes_per_block or= C.defaults.hashes_per_block
@@ -39,7 +37,7 @@ exports.Encryptor = class Encryptor
   #------------------------
 
   init : (cb) ->
-    await @stubs.init { @asp }, defer err
+    await @stubs.init {}, defer err
     cb err
 
   #------------------------
@@ -102,8 +100,8 @@ exports.Encryptor = class Encryptor
 
 #===============================================================
 
-exports.encrypt = ({stubs, asp, config}, cb) ->
-  e = new Encryptor { stubs, asp, config }
+exports.encrypt = ({stubs, config}, cb) ->
+  e = new Encryptor { stubs, config }
   await e.run defer err
   cb err
 

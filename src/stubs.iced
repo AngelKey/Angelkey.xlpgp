@@ -16,7 +16,6 @@ exports.Stubs = class Stubs
   aes256ctr_encrypt : ({buf}, cb) ->              @_unimplemented cb
   aes256ctr_decrypt : ({buf}, cb) ->              @_unimplemented cb
   hmac_sha256 : ( {buf}, cb) ->                   @_unimplemented cb
-  sha256 : ({buf}, cb) ->                         @_unimplemented cb
   read : ({start, bytes}, cb) ->                  @_unimplemented cb
   write : ({buf, start}, cb) ->                   @_unimplemented cb
   get_length : (cb) ->                            @_unimplemented cb
