@@ -9,8 +9,8 @@ class Stubs
   _unimplemented : (cb) -> cb new Error "unimplemented!"
 
   init : ({asp}, cb) ->                           @_unimplemented cb
-  decode_pgp_header : ({buf}, cb) ->              @_unimplemented cb
-  encode_pgp_header : ({buf}, cb) ->              @_unimplemented cb
+  encrypt_pgp_header : ({buf}, cb) ->             @_unimplemented cb
+  decrypt_pgp_header : ({buf}, cb) ->             @_unimplemented cb
   init_aes256ctr : ({key, iv}, cb) ->             @_unimplemented cb
   init_hmac_sha256 : ({key}, cb) ->               @_unimplemented cb
   aes256ctr_encrypt : ({buf}, cb) ->              @_unimplemented cb

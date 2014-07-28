@@ -1,19 +1,19 @@
 
 purepack = require 'msgpack'
 {make_esc} = require 'iced-error'
-{HashIndex} = require './hash_index'
+{Index} = require './index'
 {Header} = require './header'
 C = require './const'
-{Packet,PacketWriter} = require './packet'
+{DataPacket} = require './packet'
 {PacketWriter} = require './io'
 {ASP} = require('pgp-utils').util
 
 #===============================================================
 
-class Encryptor 
+class Encryptor
 
   constructor : ({@stubs, asp, config}) ->
-    @_hash_index = new HashIndex { @stubs }
+    @_index = new Index { @stubs }
     @_data = { cipeher : {}, hmac : {} }
     @_packet_writer = new PacketWriter { @stubs }
     @asp = ASP.make asp
@@ -27,12 +27,13 @@ class Encryptor
     esc = make_esc cb, "Encryptor::run"
     await @_init esc defer()
     await @_generate_keys esc defer()
-    await @_write_dummy_header esc defer()
-    await @_write_dummy_hash_blocks esc defer()
+    await @_write_header { dummy : true }, esc defer()
+    await @_write_dummy_index esc defer()
     await @_write_file esc defer()
-    await @_generate_hash_index esc defer()
-    await @_write_header esc defer()
-    await @_write_hash_blocks esc defer()
+    await @_generate_index esc defer()
+    @_packet_writer.rewind()
+    await @_write_header { dummy : false }, esc defer()
+    await @_write_index esc defer()
     cb null
 
   #------------------------
@@ -51,49 +52,37 @@ class Encryptor
 
     await @stubs.init_aes256ctr @_data.cipher, esc defer()
     await @stubs.init_hmac_ah256 @_data.hmac , esc defer()
+
+    @_hdr = new Header { @stubs, keys : @_data }
     cb null
 
   #------------------------
 
-  _write_header : (cb) ->
-    hdr = new Header { keys : @_data, hash_index_1 : @_hash_index_packets[0].hmac }
-    @_packet_writer.rewind()
-    await @_write_header_2 { hdr }, defer err
+  _write_index : (cb) ->
+    await @_packet_writer.write { packets : @_index_packets }, defer err
     cb err
 
   #------------------------
 
-  _write_hash_blocks : (cb) ->
-    await @_packet_write { packets : @_hash_index_packets }, defer err
-    cb err
-
-  #------------------------
-
-  _write_dummy_header : (cb) ->
-    hdr = Header.new_dummy({ @stubs })
-    await @_write_header_2 { hdr }, defer err
-    cb err
-
-  #------------------------
-
-  _write_header_2 : ({hdr}, cb) ->
+  _write_header : (opts, cb) ->
     esc = make_esc cb, "Encryptor::_write_dummy_header"
-    await hdr.to_packet esc defer()
+    await @_hdr.to_packet opts, esc defer packet
     await @_packet_writer.write {packet}, esc defer()
     cb null
 
   #------------------------
 
-  _write_dummy_hash_blocks : (cb) ->
-    tmp = new HashIndex { @stubs, @config }
-    await tmp.gen_dummy { }, esc defer() 
+  _write_dummy_index : (cb) ->
+    tmp = new Index { @stubs, @config }
+    await tmp.gen_dummy { }, esc defer packets
     await @_packet_writer.write { packets }, defer err
     cb err
 
   #------------------------
 
-  _generate_hash_index : (cb) ->
-    await @_hash_index.generate {}, defer err, @_hash_index_packets
+  _generate_index : (cb) ->
+    await @_index.generate {}, defer err, @_index_packets
+    @_hdr.set_hmac_block_1 @_index_packets[0].hmac
     cb err
 
   #------------------------
@@ -105,10 +94,10 @@ class Encryptor
     while i < len
       end = Math.min(i + @config.blocksize, len)
       await @stubs.read { start, bytes : (end - start) }, esc defer buf
-      packet = new EncryptedPacket { buf, @stubs }
+      packet = new DataPacket { buf, @stubs }
       await packet.encrypt esc defer()
       await @_packet_writer.write { packet}, esc defer index
-      @_hash_index.index { index, hmac : packet.hmac }
+      @_index.index { index, hmac : packet.hmac }
     cb null
 
 #===============================================================
