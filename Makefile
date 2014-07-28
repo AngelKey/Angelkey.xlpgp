@@ -14,6 +14,7 @@ $(BUILD_STAMP): \
 	lib/header.js \
 	lib/index.js \
 	lib/io.js \
+	lib/main.js \
 	lib/packet.js \
 	lib/stubs.js
 	date > $@

@@ -3,7 +3,7 @@
 
 {make_esc} = require 'iced-utils'
 C = require './const'
-{IndexPacket} = require './packets'
+{IndexPacket} = require './packet'
 
 #=================================================================================
 

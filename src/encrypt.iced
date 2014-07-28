@@ -1,5 +1,4 @@
 
-purepack = require 'msgpack'
 {make_esc} = require 'iced-error'
 {Index} = require './index'
 {Header} = require './header'

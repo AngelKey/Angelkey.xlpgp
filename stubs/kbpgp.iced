@@ -1,0 +1,4 @@
+
+main = require '../'
+
+class Stubs

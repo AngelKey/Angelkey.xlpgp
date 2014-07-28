@@ -23,6 +23,10 @@
   "homepage": "https://github.com/keybase/xlpgp",
   "dependencies": {
     "iced-coffee-script": "^1.7.1-f",
+    "iced-error": "0.0.9",
     "purepack": "^1.0.1"
+  },
+  "devDependencies": {
+    "kbpgp": "^0.1.23"
   }
 }
