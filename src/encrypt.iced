@@ -78,6 +78,7 @@ exports.Encryptor = class Encryptor
     go = true
     i = 0
     while go
+      console.log "A #{i}"
       packetno = (i + 1)
       if (i % @config.hashes_per_index_packet) is 0
         await @_index.gen_dummy { packetno }, esc defer packet
@@ -85,7 +86,9 @@ exports.Encryptor = class Encryptor
         await @stubs.read esc defer buf, eof
         go = false if eof
         packet = new DataPacket { buf, @stubs, packetno }
+      console.log "B"
       await packet.crypto esc defer()
+      console.log "C"
       await @_packet_writer.write { packet }, esc defer offset
       @_index.index { packetno , hmac : packet.hmac }
       packet.set_offset offset

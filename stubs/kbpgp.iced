@@ -136,8 +136,8 @@ class Stubs extends main.Stubs
       progress_hook : @asp.progress_hook.bind(@asp)
       what : "HMAC"
       klass : triplesec.hmac.HMAC_SHA256
-    await triplesec.hmac.bulk_sign args, defer err, res
-    cb err, res?.to_buffer()
+    await triplesec.hmac.bulk_sign args, defer res
+    cb null, res?.to_buffer()
 
   #---------------------------
 
