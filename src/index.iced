@@ -36,18 +36,32 @@ exports.Index = class Index
 
   #--------------
 
-  gen_actual : ({packetno}, cb) ->
-    err = null
-    if not (pkt = @_packets[packetno])?
-      err = new Error "Could not find a dummy packet for #{packetno}"
-    else
-      hpip = @config.hashes_per_index_packet
-      data = for i in [0...hpip]
-        val = @_hmacs[i+packetno+1]
-        break unless val?
-        val
-      pkt.reset { data }
-    cb err, pkt
+  gen_actual : ({packetno, packet}, cb) ->
+    hpip = @config.hashes_per_index_packet
+    data = for i in [0...hpip]
+      val = @_hmacs[i+packetno+1]
+      break unless val?
+      val
+    packet.reset { data }
+    cb null, packet
+
+  #--------------
+
+  regen : (cb) ->
+    esc = make_esc cb, "Index::regen"
+    for packetno, packet of @_packets
+      await @gen_actual { packetno, packet }, esc defer()
+      await packet.crypto esc defer()
+    cb null
+
+  #--------------
+
+  rewrite : ({packet_writer}, cb) ->
+    esc = make_esc cb, "Index::rewrite"
+    for packetno, packet of @_packets
+      await packet_writer.write { packet, offset : packet.get_offset() }, esc defer()
+    cb null
+
 
 #=================================================================================
 

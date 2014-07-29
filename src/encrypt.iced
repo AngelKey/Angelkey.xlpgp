@@ -11,12 +11,12 @@ C = require './const'
 exports.Encryptor = class Encryptor
 
   constructor : ({@stubs, config}) ->
-    @_index = new Index { @stubs }
-    @_data = { cipeher : {}, hmac : {} }
+    @_data = { cipher : {}, hmac : {} }
     @_packet_writer = new PacketWriter { @stubs }
     @config = config or {}
     @config.blocksize or= C.defaults.blocksize
     @config.hashes_per_index_packet or= C.defaults.hashes_per_index_packet
+    @_index = new Index { @stubs, @config }
 
   #------------------------
 
@@ -26,16 +26,16 @@ exports.Encryptor = class Encryptor
     await @_generate_keys esc defer()
     await @_write_header { dummy : true }, esc defer()
     await @_write_file esc defer()
-    await @_generate_index esc defer()
-    @_packet_writer.rewind()
-    await @_write_header { dummy : false }, esc defer()
+    await @_index.regen esc defer first_hmac
+    await @_packet_writer.rewind esc defer()
+    await @_write_header { dummy : false, first_hmac }, esc defer()
     await @_write_index esc defer()
-    await @stubs.flush esc defer()
+    await @stubs.close esc defer()
     cb null
 
   #------------------------
 
-  init : (cb) ->
+  _init : (cb) ->
     await @stubs.init {}, defer err
     cb err
 
@@ -47,8 +47,11 @@ exports.Encryptor = class Encryptor
     await @stubs.prng C.cipher.iv_size,  esc defer @_data.cipher.iv
     await @stubs.prng C.hmac.key_size,   esc defer @_data.hmac.key
 
+    console.log "XXX"
+    console.log @_data
+
     await @stubs.init_aes256ctr @_data.cipher, esc defer()
-    await @stubs.init_hmac_ah256 @_data.hmac , esc defer()
+    await @stubs.init_hmac_sha256 @_data.hmac , esc defer()
 
     @_hdr = new Header { @stubs, keys : @_data }
     cb null
@@ -56,32 +59,17 @@ exports.Encryptor = class Encryptor
   #------------------------
 
   _write_index : (cb) ->
-    await @_packet_writer.write { packets : @_index_packets }, defer err
+    await @_index.rewrite { packet_writer : @_packet_writer }, defer err
     cb err
 
   #------------------------
 
-  _write_header : (opts, cb) ->
-    esc = make_esc cb, "Encryptor::_write_dummy_header"
-    await @_hdr.to_packet opts, esc defer packet
+  _write_header : ({first_hmac, dummy}, cb) ->
+    esc = make_esc cb, "Encryptor::_write_header"
+    @_hdr.set_hmac_packet_1 first_hmac
+    await @_hdr.to_packet { dummy }, esc defer packet
     await @_packet_writer.write {packet}, esc defer()
     cb null
-
-  #------------------------
-
-  _write_dummy_index_packet : ({packetno}, cb) ->
-    esc = make_esc cb, "Encryptor::_write_dummy_index_packet"
-    await @_index.gen { packetno }, esc defer packet
-    await @_packet_writer.write { packet }, esc defer index, offset
-    packet.set_offset = offset
-    cb null
-
-  #------------------------
-
-  _generate_index : (cb) ->
-    await @_index.generate {}, defer err, @_index_packets
-    @_hdr.set_hmac_packet_1 @_index_packets[0].hmac
-    cb err
 
   #------------------------
 
@@ -98,9 +86,10 @@ exports.Encryptor = class Encryptor
         go = false if eof
         packet = new DataPacket { buf, @stubs, packetno }
       await packet.crypto esc defer()
-      await @_packet_writer.write { packet }, esc defer index
+      await @_packet_writer.write { packet }, esc defer offset
       @_index.index { packetno , hmac : packet.hmac }
-      i += @config.blocksize
+      packet.set_offset offset
+      i++
     cb null
 
 #===============================================================

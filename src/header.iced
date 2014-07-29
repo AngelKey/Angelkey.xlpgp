@@ -1,6 +1,8 @@
 
 C = require './const'
 {pack} = require 'purepack'
+{make_esc} = require 'iced-error'
+{HeaderPacket} = require './packet'
 
 #===============================================================
 

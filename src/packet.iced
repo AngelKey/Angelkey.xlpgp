@@ -1,5 +1,5 @@
 
-{mpack} = require 'purepack'
+{pack} = require 'purepack'
 {make_esc} = require 'iced-error'
 C = require './const'
 
@@ -26,6 +26,7 @@ class Packet
   #---------
 
   set_offset : (o) -> @_offset = o
+  get_offset : ( ) -> @_offset
 
   #---------
 
@@ -38,9 +39,9 @@ class Packet
   to_buffer : () ->
     unless @_buf_cache = null
       obj = [ @packetno, @packet_tag(), @to_json() ]
-      packed = mpack obj
+      packed = pack obj
       if @_dummy_len? then packet = pad packet, @_dummy_len
-      len = mpack packed.length
+      len = pack packed.length
       @_buf_cache = Buffer.concat [ len, packed ]
       @dummy_len = @_buf_cache.length if @dummy?
     @_buf_cache
@@ -118,7 +119,7 @@ exports.HeaderPacket = class HeaderPacket extends Packet
 
   #---------
 
-  constructor : ( { @pgp, @stubs}) ->
+  constructor : ( { @pgp, stubs}) ->
     super { stubs, packetno : 0 }
 
   #---------

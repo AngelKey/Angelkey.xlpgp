@@ -1,10 +1,11 @@
 
 main = require '../'
 pgpu = require 'pgp-utils'
-{ASP} = pgp.util
+{ASP} = pgpu.util
 fs = require 'fs'
 {make_esc} = require 'iced-error'
 kbpgp = require 'kbpgp'
+{KeyManager} = kbpgp
 triplesec = require 'triplesec'
 {WordArray} = triplesec
 
@@ -31,10 +32,9 @@ class File
       err = new Error "short write -- should handle this!"
     cb err
 
-  get_length : (cb) ->
-    await fs.fstat @fd, defer err, stat
-    ret = if err? then null else stat.size
-    cb err, ret
+  close : (cb) ->
+    await fs.close @fd, defer err
+    cb err
 
 #=================================================================================
 
@@ -76,7 +76,7 @@ class Stubs extends main.Stubs
 
   #---------------------------
 
-  init_aes256_ctr : ({key, iv}, cb) ->
+  init_aes256ctr : ({key, iv}, cb) ->
     @block_cipher = new triplesec.ciphers.AES WordArray.from_buffer key
 
     # It would be nice to use Triplesec-style full 128-bit CTRs, but SSL
@@ -84,7 +84,11 @@ class Stubs extends main.Stubs
     # IV and 8 bytes of counter.
     #
     # I'm not too worried since we're using random AES keys...
-    @iv = WordArray.from_buffer Buffer.concat(iv, (new Buffer (0 for i in [0...8])) )
+    pad = new Buffer (0 for [0...8])
+    console.log iv
+    iv = Buffer.concat [ iv, pad ]
+    console.log iv
+    @iv = WordArray.from_buffer iv
 
     # Here's the stream-style cipher with a constantly-incrementing nonce
     # via the counter.
@@ -128,9 +132,64 @@ class Stubs extends main.Stubs
 
   read : ({start, bytes}, cb) -> @infile.read { start, bytes}, cb
   write : ({start, buf }, cb) -> @infile.write { start, buf }, cb
-  get_length : (cb) -> @infile.get_length cb
+
+  #---------------------------
+
+  prng : (n, cb) ->
+    await kbpgp.rand.SRF().random_bytes n, defer ret
+    cb null, ret
+
+  #---------------------------
+
+  close : (cb) ->
+    await @outfile.close defer err
+    cb err
+
+  #---------------------------
+
+  estimate_pgp_header_length : (cb) ->
+    cb null, 300
 
   #---------------------------
 
 #=================================================================================
+
+key = """
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: GnuPG/MacGPG2 v2.0.22 (Darwin)
+Comment: GPGTools - https://gpgtools.org
+
+lQHhBFMFX/YRBACKwOOj7dkyHb8J3qDOvS0ZEcgiZnFCaLCh07GWV/S/HEelVaDF
+BIVdn2Ho/j80HWkRMJAFqNBoEfqqz1n6MFxZNgUlWOOSdUIkOq2qcZhqQqcvwqJU
+FxKKO7gKI037HBYlgmgD2/LGAWGZQDHDciDqcy+SEwvFB+y/x9bSSCornwCgnVzp
+C77KgeXIS26JtbMeNd7x+xkD/3NjzK0jF3v7fASE2Eik+VlGiXkk8IuV32LYAtkd
+Qyjw+Xqx6T3gtOEPOJWd0MlOdb75J/EMJYN+10yMCIFgMTUexL4uVRKMRBy3JBwW
+kHApO+LG/2g5ZHupaqBixfcpya5N1T+sNNlPQ1pvCTANakp1ELR2BAb6g5PGuQab
+scboA/9LsjYMdTqXQVCj9ck0+kSFxeBygobDqQIwd4BW2fMRzRg7kFZdICtzYSSi
+2z9iHmzC+OiokPKHnVSYRKSZ5cHe/ke2SunptKzpFhWxKO5FYRODX3txvEMUUst+
+FE1f/+dnLQyxY5BB1fRcpUlUtRZ453lObMm0aY652bgyW/6CSP4DAwJVX0fqCIms
+8WC03phNbtqDYUIajoX+e+p8wBBUNRZo4JSV8s7OTI+MMTR0MO38+9B+cM9KKmbG
+A0Clx7Q3R2VvcmdlcyBCZW5qYW1pbiBDbGVtZW5jZWF1IChwdyBpcyAnYWJjZCcp
+IDxnYmNAZ292LmZyPohoBBMRAgAoBQJTBV/2AhsDBQkSzAMABgsJCAcDAgYVCAIJ
+CgsEFgIDAQIeAQIXgAAKCRA350+UAcLjmJWYAKCYHsrgY+k3bQ7ov2XHf9SjX7qU
+twCfebPu3y0/Ll7OdCw5fcXuzbCUbjY=
+=s2F5
+-----END PGP PRIVATE KEY BLOCK-----
+"""
+
+pp = 'abcd'
+
+
+test = ({infile, outfile}, cb) ->
+  esc = make_esc cb, "test"
+  await KeyManager.import_from_armored_pgp { raw : key  }, esc defer km
+  await km.unlock_pgp { passphrase : pp }, esc defer()
+  stubs = new Stubs { infile, outfile, encrypt_for : km }
+  await main.encrypt { stubs }, esc defer()
+  cb null
+
+await test {infile : 'x', outfile :'y' }, defer err
+console.log err
+
+
 
