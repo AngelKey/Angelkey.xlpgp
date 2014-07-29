@@ -48,9 +48,6 @@ exports.Encryptor = class Encryptor
     await @stubs.prng C.cipher.iv_size,  esc defer @_data.cipher.iv
     await @stubs.prng C.hmac.key_size,   esc defer @_data.hmac.key
 
-    console.log "XXX"
-    console.log @_data
-
     await @stubs.init_aes256ctr @_data.cipher, esc defer()
     await @stubs.init_hmac_sha256 @_data.hmac , esc defer()
 
@@ -79,7 +76,6 @@ exports.Encryptor = class Encryptor
     go = true
     i = 0
     while go
-      console.log "A #{i}"
       packetno = (i + 1)
       packet = null
       if (i % @config.hashes_per_index_packet) is 0
@@ -88,13 +84,9 @@ exports.Encryptor = class Encryptor
         await @_block_reader.read esc defer buf, eof
         go = false if eof
         if buf.length
-          console.log "ok shit then"
-          console.log buf
           packet = new DataPacket { plaintext : buf, @stubs, packetno }
       if packet?
-        console.log "B"
         await packet.crypto esc defer()
-        console.log "C"
         await @_packet_writer.write { packet }, esc defer offset
         @_index.index { packetno , hmac : packet.hmac }
         packet.set_offset offset

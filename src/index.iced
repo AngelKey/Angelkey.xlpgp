@@ -1,7 +1,7 @@
 
 #=================================================================================
 
-{make_esc} = require 'iced-utils'
+{make_esc} = require 'iced-error'
 C = require './const'
 {IndexPacket} = require './packet'
 

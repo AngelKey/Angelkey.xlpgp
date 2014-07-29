@@ -17,32 +17,17 @@ class File
     @fd = null
 
   open : (cb) ->
-    console.log "opening ...."
-    console.log @name
-    console.log @flags
-    console.log @mode
     await fs.open @name, @flags, @mode, defer err, @fd
-    console.log err
-    console.log @fd
     cb err
 
   read : ( {start, bytes}, cb) ->
-    console.log "AAA3"
-    console.log bytes
     buf = new Buffer bytes
     await fs.read @fd, buf, 0, bytes, start, defer err, bytesRead, buffer
     ret = if err? then null else buf[0...bytesRead]
     cb err, ret
 
   write : ( {start, buf}, cb) ->
-    console.log "writing ..."
-    console.log @fd
-    console.log @name
-    console.log start
-    console.log buf
     await fs.write @fd, buf, 0, buf.length, start, defer err, bytesWritten
-    console.log err
-    console.log bytesWritten
     if not err? and (buf.length isnt bytesWritten)
       err = new Error "short write -- should handle this!"
     cb err
@@ -123,7 +108,7 @@ class Stubs extends main.Stubs
       progress_hook : @asp.progress_hook.bind(@asp)
       what : "AES"
     await @cipher.bulk_encrypt args, defer ret
-    cb ret.to_buffer()
+    cb null, ret.to_buffer()
 
   #---------------------------
 
@@ -203,6 +188,7 @@ test = ({infile, outfile}, cb) ->
 
 await test {infile : 'x', outfile :'y' }, defer err
 console.log err
+process.exit (if err? then 1 else 0)
 
 
 
