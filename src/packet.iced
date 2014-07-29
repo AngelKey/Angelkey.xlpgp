@@ -40,7 +40,7 @@ class Packet
     unless @_buf_cache = null
       obj = [ @packetno, @packet_tag(), @to_json() ]
       packed = pack obj
-      if @_dummy_len? then packet = pad packet, @_dummy_len
+      if @_dummy_len? then packet = pad packed, @_dummy_len
       len = pack packed.length
       @_buf_cache = Buffer.concat [ len, packed ]
       @dummy_len = @_buf_cache.length if @dummy?
@@ -48,7 +48,7 @@ class Packet
 
   #---------
 
-  compte_hmac : (cb) ->
+  compute_hmac : (cb) ->
     err = null
     unless @_hmac_cache
       await @stubs.hmac_sha256 { buf : @to_buffer() }, defer err, @_hmac_cache
@@ -119,8 +119,9 @@ exports.HeaderPacket = class HeaderPacket extends Packet
 
   #---------
 
-  constructor : ( { @pgp, stubs}) ->
+  constructor : ( { @pgp, stubs, len}) ->
     super { stubs, packetno : 0 }
+    @_dummy_len = len
 
   #---------
 

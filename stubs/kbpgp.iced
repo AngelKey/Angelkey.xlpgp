@@ -17,7 +17,13 @@ class File
     @fd = null
 
   open : (cb) ->
+    console.log "opening ...."
+    console.log @name
+    console.log @flags
+    console.log @mode
     await fs.open @name, @flags, @mode, defer err, @fd
+    console.log err
+    console.log @fd
     cb err
 
   read : ( {start, bytes}, cb) ->
@@ -27,8 +33,15 @@ class File
     cb err, ret
 
   write : ( {start, buf}, cb) ->
+    console.log "writing ..."
+    console.log @fd
+    console.log @name
+    console.log start
+    console.log buf
     await fs.write @fd, buf, 0, buf.length, start, defer err, bytesWritten
-    if err? and (buf.length isnt bytesWritten)
+    console.log err
+    console.log bytesWritten
+    if not err? and (buf.length isnt bytesWritten)
       err = new Error "short write -- should handle this!"
     cb err
 
@@ -85,9 +98,7 @@ class Stubs extends main.Stubs
     #
     # I'm not too worried since we're using random AES keys...
     pad = new Buffer (0 for [0...8])
-    console.log iv
     iv = Buffer.concat [ iv, pad ]
-    console.log iv
     @iv = WordArray.from_buffer iv
 
     # Here's the stream-style cipher with a constantly-incrementing nonce
@@ -125,13 +136,13 @@ class Stubs extends main.Stubs
       progress_hook : @asp.progress_hook.bind(@asp)
       what : "HMAC"
       klass : triplesec.hmac.HMAC_SHA256
-    await triplesec.bulk_sign args, defer err, res
+    await triplesec.hmac.bulk_sign args, defer err, res
     cb err, res?.to_buffer()
 
   #---------------------------
 
   read : ({start, bytes}, cb) -> @infile.read { start, bytes}, cb
-  write : ({start, buf }, cb) -> @infile.write { start, buf }, cb
+  write : ({start, buf }, cb) -> @outfile.write { start, buf }, cb
 
   #---------------------------
 

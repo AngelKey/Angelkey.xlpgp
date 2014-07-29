@@ -24,11 +24,11 @@ exports.Encryptor = class Encryptor
     esc = make_esc cb, "Encryptor::run"
     await @_init esc defer()
     await @_generate_keys esc defer()
-    await @_write_header { dummy : true }, esc defer()
+    await @_write_header {}, esc defer()
     await @_write_file esc defer()
     await @_index.regen esc defer first_hmac
     await @_packet_writer.rewind esc defer()
-    await @_write_header { dummy : false, first_hmac }, esc defer()
+    await @_write_header { first_hmac }, esc defer()
     await @_write_index esc defer()
     await @stubs.close esc defer()
     cb null
@@ -64,10 +64,10 @@ exports.Encryptor = class Encryptor
 
   #------------------------
 
-  _write_header : ({first_hmac, dummy}, cb) ->
+  _write_header : ({first_hmac}, cb) ->
     esc = make_esc cb, "Encryptor::_write_header"
-    @_hdr.set_hmac_packet_1 first_hmac
-    await @_hdr.to_packet { dummy }, esc defer packet
+    @_hdr.set_hmac_packet_1 first_hmac if first_hmac?
+    await @_hdr.to_packet esc defer packet
     await @_packet_writer.write {packet}, esc defer()
     cb null
 
@@ -79,7 +79,7 @@ exports.Encryptor = class Encryptor
     i = 0
     while go
       packetno = (i + 1)
-      if (i % @const.hashes_per_index_packet) is 0
+      if (i % @config.hashes_per_index_packet) is 0
         await @_index.gen_dummy { packetno }, esc defer packet
       else
         await @stubs.read esc defer buf, eof

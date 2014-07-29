@@ -26,7 +26,11 @@ exports.PacketWriter = class PacketWriter
     @_pos = offset if offset?
     start_pos = @_pos
     for p in packets
+      console.log "Wrtie packet ..."
+      console.log p
       buf = p.to_buffer()
+      console.log "it's here ->"
+      console.log buf
       await @stubs.write { buf, start : @_pos }, esc defer()
       @_pos += buf.length
     cb null, start_pos

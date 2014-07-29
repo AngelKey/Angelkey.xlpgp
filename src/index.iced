@@ -29,7 +29,7 @@ exports.Index = class Index
   #--------------
 
   gen_dummy : ({packetno}, cb) ->
-    data = if dummy then @_dummy_packet_data
+    data = @_dummy_packet_data
     pkt = new IndexPacket { packetno, data , @stubs, @dummy }
     @_packets[packetno] = pkt
     cb null, pkt

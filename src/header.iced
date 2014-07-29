@@ -27,18 +27,18 @@ exports.Header = class Header
 
   #-------------
 
-  to_packet : ({dummy}, cb) ->
+  to_packet : (cb) ->
     esc = make_esc cb, "Header::to_packet"
     to_buf_args = {}
-    if dummy
+    if @hmac_packet_1?
+      await @generate esc defer pgp
+      padded_len = @_dummy.len if @_dummy?
+    else
       await @stubs.estimate_pgp_header_length defer err, len
       @_dummy = pgp = new Buffer (0 for [0...len])
-    else
-      await @generate esc defer pgp
-      to_buf_args.len = @_dummy.len if @_dummy?
-    pkt = new HeaderPacket { pgp, @stubs }
-    buf = pkt.to_buffer to_buf_args
-    cb null, buf
+      padded_len = null
+    pkt = new HeaderPacket { pgp, @stubs, len : padded_len }
+    cb null, pkt
 
 #===============================================================
 
