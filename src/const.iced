@@ -1,6 +1,7 @@
 
 T =
   version : 1
+  magic : 0x88892192
   cipher :
     key_size : 32 # AES256
     iv_size  : 8  # AES256, with 8 bytes of 0s in the LSBs.

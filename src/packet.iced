@@ -1,6 +1,7 @@
 
 {mpack} = require 'purepack'
 {make_esc} = require 'iced-error'
+C = require './const'
 
 #===============================================================
 
@@ -17,7 +18,7 @@ class Packet
 
   #---------
 
-  constructor : ({@stubs, @dummy}) ->
+  constructor : ({@stubs, @dummy, @packetno}) ->
     @_buf_cache = null
     @_hmac_cache = null
     @_offset = null
@@ -28,7 +29,7 @@ class Packet
 
   #---------
 
-  reset : () -> 
+  reset : () ->
     @_buf_cache = @_hmac_cache = null
     @dummy = false
 
@@ -36,7 +37,7 @@ class Packet
 
   to_buffer : () ->
     unless @_buf_cache = null
-      obj = [ @packet_tag(), @to_json() ]
+      obj = [ @packetno, @packet_tag(), @to_json() ]
       packed = mpack obj
       if @_dummy_len? then packet = pad packet, @_dummy_len
       len = mpack packed.length
@@ -48,8 +49,8 @@ class Packet
 
   compte_hmac : (cb) ->
     err = null
-    unless @hmac?
-      await @stubs.hmac_sha256 { buf : @to_buffer() }, defer err, @hmac
+    unless @_hmac_cache
+      await @stubs.hmac_sha256 { buf : @to_buffer() }, defer err, @_hmac_cache
     cb err, @_hmac_cache
 
   #---------
@@ -64,9 +65,21 @@ exports.IndexPacket = class IndexPacket extends Packet
 
   #---------
 
-  constructor : ( {stubs, @index}) -> super { stubs }
+  constructor : ( { packetno, stubs, @data}) -> super { packetno, stubs }
   packet_tag : () -> IndexPacket.TAG
-  to_json : () -> @index
+  to_json : () -> @data
+
+  #---------
+
+  crypto : (cb) ->
+    await @compute_hmac defer err
+    cb err
+
+  #---------
+
+  reset : ({data}) ->
+    super()
+    @data = data
 
 #===============================================================
 
@@ -76,8 +89,8 @@ exports.DataPacket = class DataPacket extends Packet
 
   #---------
 
-  constructor : ( {@plaintext, stubs}) ->
-    super { stubs }
+  constructor : ( {packetno, @plaintext, stubs}) ->
+    super { packetno, stubs }
     @hmac = null
     @ciphertext = null
 
@@ -87,7 +100,7 @@ exports.DataPacket = class DataPacket extends Packet
 
   #---------
 
-  encrypt : (cb) ->
+  crypto : (cb) ->
     esc = make_esc cb, "DataPacket.encrypt"
     await @stubs.aes256ctr_encrypt { buf : @plaintext }, esc defer @ciphertext
     await @compute_hmac esc defer()
@@ -106,7 +119,7 @@ exports.HeaderPacket = class HeaderPacket extends Packet
   #---------
 
   constructor : ( { @pgp, @stubs}) ->
-    super { stubs }
+    super { stubs, packetno : 0 }
 
   #---------
 
@@ -114,7 +127,7 @@ exports.HeaderPacket = class HeaderPacket extends Packet
 
   #---------
 
-  to_json : () -> @pgp
+  to_json : () -> [ C.magic, C.version, @pgp ]
 
 #===============================================================
 

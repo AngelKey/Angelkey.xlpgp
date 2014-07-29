@@ -90,14 +90,16 @@ exports.Encryptor = class Encryptor
     go = true
     i = 0
     while go
+      packetno = (i + 1)
       if (i % @const.hashes_per_index_packet) is 0
-        await @_write_dummy_index_packet { packetno : (i+1) }, esc defer()
-      await @stubs.read esc defer buf, eof
-      go = false if eof
-      packet = new DataPacket { buf, @stubs }
-      await packet.encrypt esc defer()
+        await @_index.gen_dummy { packetno }, esc defer packet
+      else
+        await @stubs.read esc defer buf, eof
+        go = false if eof
+        packet = new DataPacket { buf, @stubs, packetno }
+      await packet.crypto esc defer()
       await @_packet_writer.write { packet }, esc defer index
-      @_index.index { index, hmac : packet.hmac }
+      @_index.index { packetno , hmac : packet.hmac }
       i += @config.blocksize
     cb null
 
