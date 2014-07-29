@@ -18,35 +18,25 @@ exports.Index = class Index
   constructor : ( {@stubs, @config } ) ->
     @_hmacs = []
     @_empty_hash = new Buffer( 0 for [0...C.hmac.output_size])
-    @_dummy_blocks = {}
+    @_packets = {}
 
   #--------
 
   index : ( {index, hmac } ) ->
     @_hmacs[index] = hmac
 
-  #--------
+  #--------------
 
-  gen_dummy_block : (len) ->
-    unless (ret = @_dummy_blocks[len])?
-      ret = (@_empty_hash for [0...len])
-      @_dummy_blocks[len] = ret
-    ret
+  get_hmac : (i) -> @_hmacs[i] or @_empty_hash
 
-  #-------------
+  #--------------
 
-  gen_dummy : (args, cb) ->
-    esc = make_esc cb, "HashIndex::gen_dummy"
-    await @layout esc defer()
-
-    n = @_counts.file_blocks
-    t = @_counts.total_blocks
-
-    for i in [(n-t)...n]
-      @_hmacs[i] = @_empty_hash
-
-    await @generate { skip_sanity_check : true, clear : true }, esc defer packets
-    cb null, packets
+  gen : ({dummy, packetno}, cb) ->
+    hpip = @config.hashes_per_index_packet
+    data = [ packetno, (@get_hmac(i+packno) for i in [0...hpip]) ]
+    pkt = new IndexPacket { data , @stubs, @dummy }
+    @_packets[packetno] = pkt
+    cb null
 
   #--------------
 

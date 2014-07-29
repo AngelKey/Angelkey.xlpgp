@@ -16,7 +16,7 @@ exports.Encryptor = class Encryptor
     @_packet_writer = new PacketWriter { @stubs }
     @config = config or {}
     @config.blocksize or= C.defaults.blocksize
-    @config.hashes_per_block or= C.defaults.hashes_per_block
+    @config.hashes_per_index_packet or= C.defaults.hashes_per_index_packet
 
   #------------------------
 
@@ -25,7 +25,6 @@ exports.Encryptor = class Encryptor
     await @_init esc defer()
     await @_generate_keys esc defer()
     await @_write_header { dummy : true }, esc defer()
-    await @_write_dummy_index esc defer()
     await @_write_file esc defer()
     await @_generate_index esc defer()
     @_packet_writer.rewind()
@@ -70,32 +69,36 @@ exports.Encryptor = class Encryptor
 
   #------------------------
 
-  _write_dummy_index : (cb) ->
-    tmp = new Index { @stubs, @config }
-    await tmp.gen_dummy {}, esc defer packets
-    await @_packet_writer.write { packets }, defer err
-    cb err
+  _write_dummy_index_packet : ({packetno}, cb) ->
+    esc = make_esc cb, "Encryptor::_write_dummy_index_packet"
+    await @_index.gen { packetno }, esc defer packet
+    await @_packet_writer.write { packet }, esc defer index, offset
+    packet.set_offset = offset
+    cb null
 
   #------------------------
 
   _generate_index : (cb) ->
     await @_index.generate {}, defer err, @_index_packets
-    @_hdr.set_hmac_block_1 @_index_packets[0].hmac
+    @_hdr.set_hmac_packet_1 @_index_packets[0].hmac
     cb err
 
   #------------------------
 
   _write_file : (cb) ->
     esc = make_esc cb, "Encryptor::_write_file"
-    await @stubs.get_length esc defer len
+    go = true
     i = 0
-    while i < len
-      end = Math.min(i + @config.blocksize, len)
-      await @stubs.read { start, bytes : (end - start) }, esc defer buf
+    while go
+      if (i % @const.hashes_per_index_packet) is 0
+        await @_write_dummy_index_packet { packetno : (i+1) }, esc defer()
+      await @stubs.read esc defer buf, eof
+      go = false if eof
       packet = new DataPacket { buf, @stubs }
       await packet.encrypt esc defer()
-      await @_packet_writer.write { packet}, esc defer index
+      await @_packet_writer.write { packet }, esc defer index
       @_index.index { index, hmac : packet.hmac }
+      i += @config.blocksize
     cb null
 
 #===============================================================

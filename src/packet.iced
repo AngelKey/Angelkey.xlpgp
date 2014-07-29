@@ -17,23 +17,31 @@ class Packet
 
   #---------
 
-  constructor : ({@stubs}) ->
+  constructor : ({@stubs, @dummy}) ->
     @_buf_cache = null
     @_hmac_cache = null
+    @_offset = null
 
   #---------
 
-  reset : () -> @_buf_cache = @_hmac_cache = null
+  set_offset : (o) -> @_offset = o
 
   #---------
 
-  to_buffer : (args = {}) ->
+  reset : () -> 
+    @_buf_cache = @_hmac_cache = null
+    @dummy = false
+
+  #---------
+
+  to_buffer : () ->
     unless @_buf_cache = null
       obj = [ @packet_tag(), @to_json() ]
       packed = mpack obj
-      if args?.len then packet = pad packet, args.len
+      if @_dummy_len? then packet = pad packet, @_dummy_len
       len = mpack packed.length
       @_buf_cache = Buffer.concat [ len, packed ]
+      @dummy_len = @_buf_cache.length if @dummy?
     @_buf_cache
 
   #---------

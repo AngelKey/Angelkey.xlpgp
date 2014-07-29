@@ -8,20 +8,20 @@ exports.Header = class Header
 
   #-------------
 
-  constructor : ( {@stubs, @keys, @hmac_block_1 }) ->
+  constructor : ( {@stubs, @keys, @hmac_packet_1 }) ->
     @_encrypted = null
 
   #-------------
 
   generate : (cb) ->
-    json = [ C.version, @keys.cipher.key, @keys.cipher.iv, @keys.hmac.key, @hmac_block_1 ]
+    json = [ C.version, @keys.cipher.key, @keys.cipher.iv, @keys.hmac.key, @hmac_packet_1 ]
     buf = pack json
     await @stubs.encrypt_pgp_header { buf }, defer err, @_encrypted
     cb err, @_encrypted
 
   #-------------
 
-  set_hmac_block_1 : (b) -> @hmac_block_1 = b
+  set_hmac_packet_1 : (b) -> @hmac_packet_1 = b
 
   #-------------
 

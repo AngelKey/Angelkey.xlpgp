@@ -9,7 +9,6 @@ T =
     output_size : 32 # SHA256
   defaults :
     blocksize : 0x100000
-
-T.defaults.hashes_per_block = Math.floor( (T.defaults.blocksize - 16)/ T.hmac.output_size )
+    hashes_per_index_packet : 0x100
 
 module.exports = T
