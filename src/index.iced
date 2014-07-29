@@ -52,7 +52,7 @@ exports.Index = class Index
     for packetno, packet of @_packets
       await @gen_actual { packetno, packet }, esc defer()
       await packet.crypto esc defer()
-    cb null
+    cb null, @_packets[1].get_hmac()
 
   #--------------
 

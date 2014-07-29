@@ -63,6 +63,8 @@ exports.Encryptor = class Encryptor
   #------------------------
 
   _write_header : ({first_hmac}, cb) ->
+    console.log "hmf"
+    console.log first_hmac
     esc = make_esc cb, "Encryptor::_write_header"
     @_hdr.set_hmac_packet_1 first_hmac if first_hmac?
     await @_hdr.to_packet esc defer packet

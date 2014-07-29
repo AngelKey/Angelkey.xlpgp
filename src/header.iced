@@ -34,6 +34,7 @@ exports.Header = class Header
       await @generate esc defer pgp
       padded_len = @_dummy.len if @_dummy?
     else
+      console.log "ok, in the rewrite1"
       await @stubs.estimate_pgp_header_length defer err, len
       @_dummy = pgp = new Buffer (0 for [0...len])
       padded_len = null
