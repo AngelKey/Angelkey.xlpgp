@@ -27,6 +27,8 @@ class File
     cb err
 
   read : ( {start, bytes}, cb) ->
+    console.log "AAA3"
+    console.log bytes
     buf = new Buffer bytes
     await fs.read @fd, buf, 0, bytes, start, defer err, bytesRead, buffer
     ret = if err? then null else buf[0...bytesRead]
@@ -103,7 +105,7 @@ class Stubs extends main.Stubs
 
     # Here's the stream-style cipher with a constantly-incrementing nonce
     # via the counter.
-    @cipher = triplesec.modes.CTR.Cipher { @block_cipher, @iv }
+    @cipher = new triplesec.modes.CTR.Cipher { @block_cipher, @iv }
 
     cb null
 
@@ -120,8 +122,8 @@ class Stubs extends main.Stubs
       input : WordArray.from_buffer(buf)
       progress_hook : @asp.progress_hook.bind(@asp)
       what : "AES"
-    await @cipher.bulk_encrypt args, defer err, ret
-    cb err, ret?.to_buffer()
+    await @cipher.bulk_encrypt args, defer ret
+    cb ret.to_buffer()
 
   #---------------------------
 

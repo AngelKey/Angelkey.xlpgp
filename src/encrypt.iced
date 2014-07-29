@@ -4,7 +4,7 @@
 {Header} = require './header'
 C = require './const'
 {DataPacket} = require './packet'
-{PacketWriter} = require './io'
+{BlockReader,PacketWriter} = require './io'
 
 #===============================================================
 
@@ -17,6 +17,7 @@ exports.Encryptor = class Encryptor
     @config.blocksize or= C.defaults.blocksize
     @config.hashes_per_index_packet or= C.defaults.hashes_per_index_packet
     @_index = new Index { @stubs, @config }
+    @_block_reader = new BlockReader { @stubs, @config }
 
   #------------------------
 
@@ -80,19 +81,24 @@ exports.Encryptor = class Encryptor
     while go
       console.log "A #{i}"
       packetno = (i + 1)
+      packet = null
       if (i % @config.hashes_per_index_packet) is 0
         await @_index.gen_dummy { packetno }, esc defer packet
       else
-        await @stubs.read esc defer buf, eof
+        await @_block_reader.read esc defer buf, eof
         go = false if eof
-        packet = new DataPacket { buf, @stubs, packetno }
-      console.log "B"
-      await packet.crypto esc defer()
-      console.log "C"
-      await @_packet_writer.write { packet }, esc defer offset
-      @_index.index { packetno , hmac : packet.hmac }
-      packet.set_offset offset
-      i++
+        if buf.length
+          console.log "ok shit then"
+          console.log buf
+          packet = new DataPacket { plaintext : buf, @stubs, packetno }
+      if packet?
+        console.log "B"
+        await packet.crypto esc defer()
+        console.log "C"
+        await @_packet_writer.write { packet }, esc defer offset
+        @_index.index { packetno , hmac : packet.hmac }
+        packet.set_offset offset
+        i++
     cb null
 
 #===============================================================

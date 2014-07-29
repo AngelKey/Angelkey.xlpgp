@@ -37,3 +37,21 @@ exports.PacketWriter = class PacketWriter
 
 #==============================================================================
 
+exports.BlockReader = class BlockReader
+
+  #---------------------------
+
+  constructor : ({@stubs, @config}) ->
+    @_pos = 0
+
+  #---------------------------
+
+  read : (cb) ->
+    await @stubs.read { start : @_pos, bytes : @config.blocksize }, defer err, buf
+    unless err?
+      @_pos += buf.length
+    eof = not(err) and (not(buf?) or (buf.length is 0))
+    cb err, buf, eof
+
+#==============================================================================
+
